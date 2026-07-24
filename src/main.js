@@ -1,5 +1,5 @@
 // ===================== 版本号 =====================
-document.getElementById('version-badge').textContent = 'v' + __APP_VERSION__
+document.getElementById('version-badge').textContent = 'v' + __APP_VERSION__;
 
 // ===================== 资源导入 =====================
 // 图片
@@ -72,7 +72,7 @@ const IMG = {
     { img: imgXiaoLongBao, point: 1 },
     { img: imgXigua, point: 2 },
     { img: imgZhaxia, point: 3 },
-    { img: imgLongmibao, point: 5 }
+    { img: imgLongmibao, point: 5 },
   ],
   zhaxiaSkill: imgZhaxiaSkill,
   freezeSkill: imgFreezeSkill,
@@ -174,9 +174,15 @@ function loadSave() {
         data.catches[k] = saved.catches[k];
     });
     if (saved.skills) {
-      if (saved.skills.active === null || typeof saved.skills.active === 'string')
+      if (
+        saved.skills.active === null ||
+        typeof saved.skills.active === 'string'
+      )
         data.skills.active = saved.skills.active;
-      if (saved.skills.passive === null || typeof saved.skills.passive === 'string')
+      if (
+        saved.skills.passive === null ||
+        typeof saved.skills.passive === 'string'
+      )
         data.skills.passive = saved.skills.passive;
     }
   } catch (e) {}
@@ -225,7 +231,8 @@ function renderSkillSlots(data) {
 }
 function openSkillPicker(slot) {
   skillPickerSlot = slot;
-  skillsPopTitle.textContent = slot === 'active' ? '选择主动技能' : '选择被动技能';
+  skillsPopTitle.textContent =
+    slot === 'active' ? '选择主动技能' : '选择被动技能';
   renderSkillPicker();
   startPop.classList.add('hide');
   skillsPop.classList.remove('hide');
@@ -549,7 +556,7 @@ function playSound(type) {
     source.connect(gain);
     gain.connect(audioCtx.destination);
     source.start(0);
-    if (type === 'bgm') {
+    if (type === 'bgm' && !bgmSource) {
       source.loop = true;
       bgmSource = source;
     }
@@ -873,8 +880,7 @@ function movePad(x) {
   updatePad();
 }
 
-function flashPaddle(type) {
-  if (paddleFlashTimer) clearTimeout(paddleFlashTimer);
+const flashPaddle = (() => {
   const map = {
     good: IMG.paddleGoodFlash,
     bomb: IMG.paddleBombFlash,
@@ -882,12 +888,15 @@ function flashPaddle(type) {
     xiaolong: IMG.paddleXiaolongFlash,
     ghost: IMG.paddleGhostFlash,
   };
-  if (map[type]) paddle.style.backgroundImage = `url(${map[type]})`;
-  paddleFlashTimer = setTimeout(() => {
-    paddle.style.backgroundImage = `url(${IMG.paddle})`;
-    paddleFlashTimer = null;
-  }, 200);
-}
+  return (type) => {
+    if (paddleFlashTimer) clearTimeout(paddleFlashTimer);
+    if (map[type]) paddle.style.backgroundImage = `url(${map[type]})`;
+    paddleFlashTimer = setTimeout(() => {
+      paddle.style.backgroundImage = `url(${IMG.paddle})`;
+      paddleFlashTimer = null;
+    }, 200);
+  };
+})();
 
 // ===================== 输入事件 =====================
 gameWrap.addEventListener(
@@ -1016,7 +1025,7 @@ function gameLoop(timestamp) {
   }
   const dt = Math.min(timestamp - lastFrameTime, 50);
   lastFrameTime = timestamp;
-  const timeScale = dt / 16.667;
+  const timeScale = (dt * 60) / 1000;
   updatePassiveBuffUI();
 
   for (let i = dropList.length - 1; i >= 0; i--) {

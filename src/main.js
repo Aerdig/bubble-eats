@@ -237,6 +237,12 @@ function closeSkillPicker() {
   startPop.classList.remove('hide');
   skillPickerSlot = null;
 }
+function getEndingName(endingId) {
+  return ENDING_LIST.find((e) => e.id === endingId)?.name || '对应';
+}
+function getSkillUnlockHint(def) {
+  return `解锁${getEndingName(def.unlockEnding)}结局以解锁`;
+}
 function renderSkillPicker() {
   const data = loadSave();
   const current = getValidatedSkills(data)[skillPickerSlot];
@@ -254,6 +260,8 @@ function renderSkillPicker() {
     .filter((s) => s.slot === skillPickerSlot)
     .forEach((def) => {
       const unlocked = isSkillUnlocked(def.id, data);
+      const wrap = document.createElement('div');
+      wrap.className = 'skill-pick-wrap';
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className =
@@ -263,15 +271,18 @@ function renderSkillPicker() {
       btn.innerHTML =
         `<img src="${def.icon()}" alt="${def.name}">` +
         `<p class="skill-pick-name">${def.name}</p>`;
+      const tip = document.createElement('span');
+      tip.className = 'skill-tip' + (unlocked ? '' : ' locked-tip');
+      tip.textContent = unlocked ? def.desc : getSkillUnlockHint(def);
       if (unlocked) {
         btn.onclick = () => {
           setEquippedSkill(skillPickerSlot, def.id);
           closeSkillPicker();
         };
-      } else {
-        btn.title = '需达成对应结局解锁';
       }
-      skillsList.appendChild(btn);
+      wrap.appendChild(btn);
+      wrap.appendChild(tip);
+      skillsList.appendChild(wrap);
     });
 }
 function isPassiveBuffActive(passiveId) {
@@ -285,17 +296,27 @@ function activatePassiveBuff(passiveId) {
 }
 function updatePassiveBuffUI() {
   const wrap = document.getElementById('passiveBuffWrap');
-  const nameEl = document.getElementById('passiveBuffName');
+  const iconEl = document.getElementById('passiveSkillIconWrap');
   const timeEl = document.getElementById('passiveBuffTime');
-  if (!isPlay || !isPassiveBuffActive()) {
-    wrap.classList.add('hide');
+  if (!isPlay || !equippedPassive) {
+    wrap.classList.remove('visible');
     return;
   }
-  const def = SKILL_CATALOG[passiveBuffId];
-  nameEl.textContent = def ? def.name : '被动';
-  const left = Math.ceil((passiveBuffUntil - Date.now()) / 1000);
-  timeEl.textContent = left;
-  wrap.classList.remove('hide');
+  const def = SKILL_CATALOG[equippedPassive];
+  iconEl.style.backgroundImage = `url(${def.icon()})`;
+  const active = isPassiveBuffActive();
+  const left = active ? Math.ceil((passiveBuffUntil - Date.now()) / 1000) : 0;
+  wrap.classList.toggle('inactive', !active);
+  timeEl.textContent = active ? `${left}s` : '未激活';
+  timeEl.classList.toggle('inactive-label', !active);
+  timeEl.classList.remove('ready');
+  wrap.classList.add('visible');
+}
+function updateSkillHudLayout() {
+  document.getElementById('game').classList.toggle(
+    'has-skill-hud',
+    isPlay && (!!equippedActive || !!equippedPassive),
+  );
 }
 function getPassiveItemSpeedMult(item) {
   if (!isPassiveBuffActive('freeze')) return 1;
@@ -414,13 +435,17 @@ function getActiveSkillCooldownLeft() {
   return Math.max(0, activeSkillReadyAt - Date.now());
 }
 function updateInGameSkillBtn() {
+  const iconColor = document.getElementById('activeSkillIconWrap');
+  const iconGray = document.getElementById('activeSkillIconGray');
   if (!equippedActive || !isPlay) {
-    activeSkillBtn.style.display = 'none';
+    activeSkillBtn.classList.remove('visible');
     return;
   }
   const def = SKILL_CATALOG[equippedActive];
-  activeSkillBtn.style.display = 'block';
-  activeSkillBtn.style.backgroundImage = `url(${def.icon()})`;
+  const iconUrl = `url(${def.icon()})`;
+  iconColor.style.backgroundImage = iconUrl;
+  iconGray.style.backgroundImage = iconUrl;
+  activeSkillBtn.classList.add('visible');
   updateActiveSkillCooldownUI();
 }
 function updateActiveSkillCooldownUI() {
@@ -429,10 +454,15 @@ function updateActiveSkillCooldownUI() {
   const total = SKILL_CATALOG[equippedActive].cooldownMs || 1;
   const onCd = left > 0;
   activeSkillBtn.classList.toggle('on-cooldown', onCd);
-  activeSkillBtn.style.setProperty('--cd-remaining', onCd ? left / total : 0);
-  activeSkillCdOverlay.classList.toggle('hide', !onCd);
-  activeSkillCdText.textContent = onCd ? Math.ceil(left / 1000) : '';
-  activeSkillCdText.classList.toggle('hide', !onCd);
+  const progress = onCd ? 1 - left / total : 1;
+  activeSkillBtn.style.setProperty('--cd-progress', String(progress));
+  activeSkillCdText.textContent = onCd ? `${Math.ceil(left / 1000)}s` : '可用';
+  activeSkillCdText.classList.toggle('ready', !onCd);
+}
+function updateSkillHud() {
+  updateInGameSkillBtn();
+  updatePassiveBuffUI();
+  updateSkillHudLayout();
 }
 function useActiveSkill() {
   if (!isPlay || isPaused || !equippedActive || isActiveSkillOnCooldown()) return;
@@ -500,7 +530,6 @@ const passiveSkillSlot = document.getElementById('passiveSkillSlot');
 const activeSkillIcon = document.getElementById('activeSkillIcon');
 const passiveSkillIcon = document.getElementById('passiveSkillIcon');
 const activeSkillBtn = document.getElementById('activeSkillBtn');
-const activeSkillCdOverlay = document.getElementById('activeSkillCdOverlay');
 const activeSkillCdText = document.getElementById('activeSkillCdText');
 const startCoverImg = document.getElementById('startCoverImg');
 const resultImg = document.getElementById('resultImg');
@@ -513,6 +542,7 @@ const cntFood = document.getElementById('cntFood');
 const pauseBtn = document.getElementById('pauseBtn');
 const pauseMask = document.getElementById('pauseMask');
 const resumeBtn = document.getElementById('resumeBtn');
+const pauseRestartBtn = document.getElementById('pauseRestartBtn');
 
 // ===================== 音频系统 =====================
 let audioCtx = null;
@@ -834,6 +864,7 @@ function handleOrientation() {
   isLandscape = window.innerWidth > window.innerHeight;
   fixViewportHeight();
   applyScale();
+  updateSkillHudLayout();
 }
 
 // ===================== 全局状态 =====================
@@ -1260,10 +1291,9 @@ function startGame() {
   activeSkillReadyAt = 0;
   passiveBuffId = null;
   passiveBuffUntil = 0;
-  document.getElementById('passiveBuffWrap').classList.add('hide');
   isPlay = true;
   document.getElementById('pauseBtn').style.display = 'block';
-  updateInGameSkillBtn();
+  updateSkillHud();
   lastFrameTime = null;
   if (!audioBuf.bgm) {
     decodeAllAudio().then(() => playSound('bgm'));
@@ -1294,10 +1324,11 @@ function returnToMain() {
   dropList = [];
   paddle.style.backgroundImage = `url(${IMG.paddle})`;
   document.getElementById('pauseBtn').style.display = 'none';
-  activeSkillBtn.style.display = 'none';
+  activeSkillBtn.classList.remove('visible');
   passiveBuffId = null;
   passiveBuffUntil = 0;
-  document.getElementById('passiveBuffWrap').classList.add('hide');
+  document.getElementById('passiveBuffWrap').classList.remove('visible');
+  document.getElementById('game').classList.remove('has-skill-hud');
   document.getElementById('pauseMask').classList.add('hide');
   overPop.classList.add('hide');
   endingsPop.classList.add('hide');
@@ -1310,10 +1341,11 @@ function returnToMain() {
 function gameOver() {
   isPlay = false;
   document.getElementById('pauseBtn').style.display = 'none';
-  activeSkillBtn.style.display = 'none';
+  activeSkillBtn.classList.remove('visible');
   passiveBuffId = null;
   passiveBuffUntil = 0;
-  document.getElementById('passiveBuffWrap').classList.add('hide');
+  document.getElementById('passiveBuffWrap').classList.remove('visible');
+  document.getElementById('game').classList.remove('has-skill-hud');
   isPaused = false;
   if (frameId) cancelAnimationFrame(frameId);
   frameId = null;
@@ -1373,12 +1405,18 @@ function resumeGame() {
   startCreate();
   playSound('bgm');
 }
+function restartFromPause() {
+  if (!isPaused) return;
+  isPaused = false;
+  startGame();
+}
 
 pauseBtn.addEventListener('click', () => {
   if (isPaused) resumeGame();
   else pauseGame();
 });
 resumeBtn.addEventListener('click', resumeGame);
+pauseRestartBtn.addEventListener('click', restartFromPause);
 
 window.addEventListener('blur', () => {
   if (!isPlay || isPaused) return;

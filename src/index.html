@@ -45,12 +45,36 @@
       font-size: 27.5px;
       z-index: 10;
       text-shadow: 0 0 4px #000;
+      box-sizing: border-box;
+      padding-left: 0;
+      transition: padding-left 0.15s ease;
     }
 
-    #passiveBuffWrap {
-      font-size: 18px;
-      color: #7fd;
-      white-space: nowrap;
+    #game.has-skill-hud .info {
+      padding-left: 112px;
+    }
+
+    @media (max-width: 360px) {
+      #game.has-skill-hud .info {
+        padding-left: 108px;
+        font-size: 22px;
+      }
+    }
+
+    #skillHud {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    #skillHud > * {
+      pointer-events: auto;
     }
 
     #paddle {
@@ -217,6 +241,13 @@
       display: none !important;
     }
 
+    #pauseMask .btn-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
     #pauseMask p {
       color: #fff;
       font-size: 32px;
@@ -299,11 +330,11 @@
 
     .ending-card img {
       width: 100%;
-      height: 11vh;
-      max-height: 68px;
-      object-fit: cover;
+      aspect-ratio: 1 / 1;
+      object-fit: contain;
       border-radius: 4px;
       display: block;
+      background: rgba(0, 0, 0, 0.15);
     }
 
     .ending-card.locked {
@@ -405,6 +436,46 @@
       gap: 10px;
       justify-content: center;
       max-width: 480px;
+      overflow: visible;
+    }
+
+    #skillsPop {
+      overflow: visible;
+    }
+
+    .skill-pick-wrap {
+      position: relative;
+    }
+
+    .skill-pick-wrap .skill-tip {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: max-content;
+      max-width: 168px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #fff;
+      font-size: 10px;
+      line-height: 1.45;
+      text-align: center;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.15s ease, visibility 0.15s ease;
+      z-index: 30;
+    }
+
+    .skill-pick-wrap:hover .skill-tip {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .skill-pick-wrap .skill-tip.locked-tip {
+      color: #ffb;
     }
 
     .skill-pick {
@@ -442,52 +513,95 @@
       line-height: 1.2;
     }
 
-    #activeSkillBtn {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      z-index: 20;
-      width: 44px;
-      height: 44px;
-      padding: 0;
-      border: 2px solid rgba(255, 255, 255, 0.35);
-      border-radius: 50%;
-      background: rgba(0, 0, 0, .45) center/78% no-repeat;
-      cursor: pointer;
+    .skill-timer-box {
       display: none;
-      overflow: hidden;
+      flex-direction: row;
+      align-items: center;
+      gap: 4px;
+      width: 100px;
+      height: 36px;
+      padding: 4px 6px 4px 4px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      box-sizing: border-box;
+      --cd-progress: 1;
+    }
+
+    .skill-timer-box.visible {
+      display: flex;
+    }
+
+    .skill-timer-icon-wrap {
+      position: relative;
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+
+    .skill-timer-icon-wrap .skill-timer-icon {
+      position: absolute;
+      inset: 0;
+      background: center / contain no-repeat;
+      border-radius: 4px;
+    }
+
+    .skill-timer-icon-gray {
+      filter: grayscale(1) brightness(0.55);
+    }
+
+    .skill-timer-icon-color {
+      clip-path: inset(calc((1 - var(--cd-progress, 1)) * 100%) 0 0 0);
+    }
+
+    .skill-timer-icon {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      background: center / contain no-repeat;
+      border-radius: 4px;
+    }
+
+    .skill-timer-box.inactive .skill-timer-icon {
+      filter: grayscale(1) brightness(0.55);
+    }
+
+    .skill-timer-count {
+      flex: 1;
+      font-size: 12px;
+      font-weight: bold;
+      color: #fff;
+      text-align: center;
+      line-height: 1;
+      text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
+      white-space: nowrap;
+    }
+
+    .skill-timer-count.ready {
+      color: #7fd;
+    }
+
+    .skill-timer-count.inactive-label {
+      color: #aaa;
+      font-size: 11px;
+    }
+
+    #activeSkillBtn {
+      padding: 0;
+      cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
+      font: inherit;
+      color: inherit;
     }
 
     #activeSkillBtn.on-cooldown {
       pointer-events: none;
+      cursor: default;
     }
 
-    #activeSkillCdOverlay {
-      position: absolute;
-      inset: 0;
-      border-radius: 50%;
-      background: conic-gradient(
-        from -90deg,
-        rgba(0, 0, 0, 0.62) calc(var(--cd-remaining, 0) * 360deg),
-        transparent 0
-      );
-      pointer-events: none;
-    }
-
-    #activeSkillCdText {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      font-weight: bold;
-      color: #fff;
-      text-shadow: 0 0 4px rgba(0, 0, 0, 0.9), 0 1px 2px rgba(0, 0, 0, 0.8);
-      pointer-events: none;
-      line-height: 1;
+    #activeSkillBtn:not(.on-cooldown):active {
+      background: rgba(0, 0, 0, 0.6);
     }
 
     #version-badge {
@@ -517,7 +631,6 @@
         <div>分数：<span id="score">0</span></div>
         <div>连击：<span id="comboDisplay">0</span>x <span id="multDisplay">1.0</span></div>
         <div>生命：<span id="life">3</span></div>
-        <div id="passiveBuffWrap" class="hide"><span id="passiveBuffName">被动</span> <span id="passiveBuffTime">0</span>s</div>
       </div>
       <div id="paddle"></div>
 
@@ -581,14 +694,26 @@
           <button class="btn btn-secondary" id="homeBtn">返回主页</button>
         </div>
       </div>
-      <button id="activeSkillBtn" aria-label="使用主动技能">
-        <span id="activeSkillCdOverlay" class="hide"></span>
-        <span id="activeSkillCdText" class="hide"></span>
-      </button>
+      <div id="skillHud">
+        <button type="button" id="activeSkillBtn" class="skill-timer-box" aria-label="使用主动技能">
+          <span class="skill-timer-icon-wrap">
+            <span class="skill-timer-icon skill-timer-icon-gray" id="activeSkillIconGray"></span>
+            <span class="skill-timer-icon skill-timer-icon-color" id="activeSkillIconWrap"></span>
+          </span>
+          <span class="skill-timer-count ready" id="activeSkillCdText">可用</span>
+        </button>
+        <div id="passiveBuffWrap" class="skill-timer-box inactive">
+          <span class="skill-timer-icon" id="passiveSkillIconWrap"></span>
+          <span class="skill-timer-count inactive-label" id="passiveBuffTime">未激活</span>
+        </div>
+      </div>
       <button id="pauseBtn">&#9646;&#9646;</button>
       <div id="pauseMask" class="hide">
         <p>游戏暂停</p>
-        <button class="btn" id="resumeBtn">继续游戏</button>
+        <div class="btn-row">
+          <button class="btn" id="resumeBtn">继续游戏</button>
+          <button class="btn btn-secondary" id="pauseRestartBtn">重新开始</button>
+        </div>
       </div>
     </div>
   </div><!-- /rotate-wrapper -->

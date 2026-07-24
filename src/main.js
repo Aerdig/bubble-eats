@@ -116,6 +116,7 @@ const SKILL_CATALOG = {
     defaultUnlocked: true,
     icon: () => IMG.endHigh,
     desc: '立刻吃掉场上所有食物',
+    cooldownMs: 18000,
   },
   skill142: {
     id: 'skill142',
@@ -124,6 +125,7 @@ const SKILL_CATALOG = {
     unlockEnding: 'end142',
     icon: () => IMG.end142,
     desc: '当前页面冰块全部变成小笼包',
+    cooldownMs: 10000,
   },
   zhaxiaPass: {
     id: 'zhaxiaPass',
@@ -272,26 +274,33 @@ function renderSkillPicker() {
       skillsList.appendChild(btn);
     });
 }
-function getPassiveSpeedMult() {
-  return isPassiveBuffActive() && equippedPassive === 'freeze' ? 0.5 : 1;
+function isPassiveBuffActive(passiveId) {
+  if (!passiveBuffId || Date.now() >= passiveBuffUntil) return false;
+  return passiveId ? passiveBuffId === passiveId : true;
 }
-function isPassiveBuffActive() {
-  return !!equippedPassive && Date.now() < passiveBuffUntil;
-}
-function activatePassiveBuff() {
+function activatePassiveBuff(passiveId) {
+  passiveBuffId = passiveId;
   passiveBuffUntil = Date.now() + PASSIVE_BUFF_MS;
   updatePassiveBuffUI();
 }
 function updatePassiveBuffUI() {
   const wrap = document.getElementById('passiveBuffWrap');
+  const nameEl = document.getElementById('passiveBuffName');
   const timeEl = document.getElementById('passiveBuffTime');
   if (!isPlay || !isPassiveBuffActive()) {
     wrap.classList.add('hide');
     return;
   }
+  const def = SKILL_CATALOG[passiveBuffId];
+  nameEl.textContent = def ? def.name : '被动';
   const left = Math.ceil((passiveBuffUntil - Date.now()) / 1000);
   timeEl.textContent = left;
   wrap.classList.remove('hide');
+}
+function getPassiveItemSpeedMult(item) {
+  if (!isPassiveBuffActive('freeze')) return 1;
+  if (item.dom.dataset.type === 'passive_pickup') return 1;
+  return 0.5;
 }
 function getPassivePickupAlphaKey(passiveId) {
   return 'passive_' + passiveId;
@@ -366,7 +375,7 @@ function transformIceToXiaolongbao() {
     item.dom.dataset.point = String(bao.point);
     item.dom.dataset.alphaKey = bao.alphaKey;
     item.dom.style.backgroundImage = `url(${bao.img})`;
-    if (isPassiveBuffActive() && equippedPassive === 'zhaxiaPass')
+    if (isPassiveBuffActive('zhaxiaPass'))
       applyZhaxiaToGoodItem(item);
   });
 }
@@ -398,6 +407,12 @@ function collectVacuumedFood(index) {
   item.dom.style.transform = '';
   removeItem(index);
 }
+function isActiveSkillOnCooldown() {
+  return Date.now() < activeSkillReadyAt;
+}
+function getActiveSkillCooldownLeft() {
+  return Math.max(0, activeSkillReadyAt - Date.now());
+}
 function updateInGameSkillBtn() {
   if (!equippedActive || !isPlay) {
     activeSkillBtn.style.display = 'none';
@@ -406,10 +421,21 @@ function updateInGameSkillBtn() {
   const def = SKILL_CATALOG[equippedActive];
   activeSkillBtn.style.display = 'block';
   activeSkillBtn.style.backgroundImage = `url(${def.icon()})`;
-  activeSkillBtn.classList.toggle('used', activeSkillUsed);
+  updateActiveSkillCooldownUI();
+}
+function updateActiveSkillCooldownUI() {
+  if (!equippedActive || !isPlay) return;
+  const left = getActiveSkillCooldownLeft();
+  const total = SKILL_CATALOG[equippedActive].cooldownMs || 1;
+  const onCd = left > 0;
+  activeSkillBtn.classList.toggle('on-cooldown', onCd);
+  activeSkillBtn.style.setProperty('--cd-remaining', onCd ? left / total : 0);
+  activeSkillCdOverlay.classList.toggle('hide', !onCd);
+  activeSkillCdText.textContent = onCd ? Math.ceil(left / 1000) : '';
+  activeSkillCdText.classList.toggle('hide', !onCd);
 }
 function useActiveSkill() {
-  if (!isPlay || isPaused || !equippedActive || activeSkillUsed) return;
+  if (!isPlay || isPaused || !equippedActive || isActiveSkillOnCooldown()) return;
   let used = false;
   if (equippedActive === 'skill142') {
     transformIceToXiaolongbao();
@@ -418,8 +444,9 @@ function useActiveSkill() {
     used = vacuumAllFood();
   }
   if (used) {
-    activeSkillUsed = true;
-    updateInGameSkillBtn();
+    const cd = SKILL_CATALOG[equippedActive].cooldownMs || 0;
+    activeSkillReadyAt = Date.now() + cd;
+    updateActiveSkillCooldownUI();
   }
 }
 function saveSave(data) {
@@ -473,6 +500,8 @@ const passiveSkillSlot = document.getElementById('passiveSkillSlot');
 const activeSkillIcon = document.getElementById('activeSkillIcon');
 const passiveSkillIcon = document.getElementById('passiveSkillIcon');
 const activeSkillBtn = document.getElementById('activeSkillBtn');
+const activeSkillCdOverlay = document.getElementById('activeSkillCdOverlay');
+const activeSkillCdText = document.getElementById('activeSkillCdText');
 const startCoverImg = document.getElementById('startCoverImg');
 const resultImg = document.getElementById('resultImg');
 const loadingMask = document.getElementById('loadingMask');
@@ -834,8 +863,9 @@ let statBomb = 0,
   statFood = 0;
 let equippedActive = null;
 let equippedPassive = null;
-let activeSkillUsed = false;
+let activeSkillReadyAt = 0;
 let skillPickerSlot = null;
+let passiveBuffId = null;
 let passiveBuffUntil = 0;
 const PASSIVE_BUFF_MS = 30000;
 const PASSIVE_PICKUP_RATE = 0.04;
@@ -1018,6 +1048,7 @@ function gameLoop(timestamp) {
   lastFrameTime = timestamp;
   const timeScale = dt / 16.667;
   updatePassiveBuffUI();
+  updateActiveSkillCooldownUI();
 
   for (let i = dropList.length - 1; i >= 0; i--) {
     const item = dropList[i];
@@ -1037,25 +1068,25 @@ function gameLoop(timestamp) {
     }
 
     if (
-      isPassiveBuffActive() &&
-      equippedPassive === 'zhaxiaPass' &&
+      isPassiveBuffActive('zhaxiaPass') &&
       item.dom.dataset.type === 'good' &&
       item.dom.dataset.alphaKey !== getZhaxiaGood().alphaKey
     ) {
       applyZhaxiaToGoodItem(item);
     }
 
-    item.y += item.speed * getPassiveSpeedMult() * timeScale;
+    item.y += item.speed * getPassiveItemSpeedMult(item) * timeScale;
     item.dom.style.top = Math.round(item.y) + 'px';
 
     if (hitTest(item)) {
       const type = item.dom.dataset.type;
+      const passivePickupId = item.dom.dataset.passiveId;
       removeItem(i);
 
       if (type === 'passive_pickup') {
         playSound('eat');
         flashPaddle('good');
-        activatePassiveBuff();
+        activatePassiveBuff(passivePickupId);
         continue;
       }
 
@@ -1226,7 +1257,8 @@ function startGame() {
   const skills = getValidatedSkills();
   equippedActive = skills.active;
   equippedPassive = skills.passive;
-  activeSkillUsed = false;
+  activeSkillReadyAt = 0;
+  passiveBuffId = null;
   passiveBuffUntil = 0;
   document.getElementById('passiveBuffWrap').classList.add('hide');
   isPlay = true;
@@ -1263,6 +1295,8 @@ function returnToMain() {
   paddle.style.backgroundImage = `url(${IMG.paddle})`;
   document.getElementById('pauseBtn').style.display = 'none';
   activeSkillBtn.style.display = 'none';
+  passiveBuffId = null;
+  passiveBuffUntil = 0;
   document.getElementById('passiveBuffWrap').classList.add('hide');
   document.getElementById('pauseMask').classList.add('hide');
   overPop.classList.add('hide');
@@ -1277,6 +1311,8 @@ function gameOver() {
   isPlay = false;
   document.getElementById('pauseBtn').style.display = 'none';
   activeSkillBtn.style.display = 'none';
+  passiveBuffId = null;
+  passiveBuffUntil = 0;
   document.getElementById('passiveBuffWrap').classList.add('hide');
   isPaused = false;
   if (frameId) cancelAnimationFrame(frameId);

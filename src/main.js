@@ -33,6 +33,8 @@ import imgZhaxia from '../assets/images/zhaxia.png';
 import imgLongmibao from '../assets/images/longmibao.png';
 import imgZhaxiaSkill from '../assets/images/我是炸虾.png';
 import imgFreezeSkill from '../assets/images/全部冻上.png';
+import pauseIcon from '../assets/images/pause.svg';
+import playIcon from '../assets/images/play.svg';
 
 // 音频img
 import audioBgm from '../assets/audio/bgm.mp3';
@@ -1218,7 +1220,8 @@ function startGame() {
   statBomb = statIce = statXiaolong = statGhost = statFood = 0;
   isPaused = false;
   document.getElementById('pauseMask').classList.add('hide');
-  document.getElementById('pauseBtn').innerHTML = '&#9646;&#9646;';
+  document.getElementById('pauseBtn').innerHTML =
+    `<img src="${pauseIcon}" alt="pause" />`;
   resetCombo();
   updatePaddleSize();
   scoreBox.innerText = score;
@@ -1332,7 +1335,7 @@ function pauseGame() {
   stopCreate();
   if (frameId) cancelAnimationFrame(frameId);
   stopBgm();
-  pauseBtn.innerHTML = '&#9654;';
+  pauseBtn.innerHTML = `<img src="${playIcon}" alt="play" />`;
   pauseMask.classList.remove('hide');
 }
 function resumeGame() {
@@ -1341,7 +1344,7 @@ function resumeGame() {
   isPlay = true;
   lastFrameTime = null;
   pauseMask.classList.add('hide');
-  pauseBtn.innerHTML = '&#9646;&#9646;';
+  pauseBtn.innerHTML = `<img src="${pauseIcon}" alt="pause" />`;
   gameLoop();
   startCreate();
   playSound('bgm');
@@ -1371,3 +1374,10 @@ window.addEventListener('focus', () => {
     playSound('bgm');
   }
 });
+
+window.addEventListener("keyup", (e) => {
+  if (e.key === " ") {
+    if (isPaused) resumeGame();
+    else pauseGame();
+  }
+})

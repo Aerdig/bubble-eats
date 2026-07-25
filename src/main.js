@@ -1303,6 +1303,57 @@ passiveSkillSlot.onclick = () => openSkillPicker('passive');
 skillsBackBtn.onclick = closeSkillPicker;
 activeSkillBtn.addEventListener('click', useActiveSkill);
 
+// ===================== 鼠标/触摸控制 =====================
+
+let isTouchPad = false;
+let mouseX = 0;
+
+gameWrap.addEventListener('mousedown', (e) => {
+  if (!isPlay) return;
+  isTouchPad =
+    getAlphaAt(
+      'paddle',
+      padW,
+      padH,
+      e.clientX - padX,
+      e.clientY - (window.innerHeight - padH - 30 * scale),
+    ) >= 20;
+  if (isTouchPad) {
+    mouseX = e.clientX;
+  }
+});
+gameWrap.addEventListener('mouseup', (e) => (isTouchPad = false));
+gameWrap.addEventListener('mousemove', (e) => {
+  if (!isPlay || !isTouchPad) return;
+  movePad(e.clientX - mouseX);
+  mouseX = e.clientX;
+});
+gameWrap.addEventListener(
+  'touchstart',
+  (e) => {
+    if (!isPlay) return;
+    const touch = e.touches[0];
+    isTouchPad =
+      getAlphaAt(
+        'paddle',
+        padW,
+        padH,
+        touch.clientX - padX,
+        touch.clientY - (window.innerHeight - padH - 30 * scale),
+      ) >= 20;
+    if (isTouchPad) {
+      mouseX = touch.clientX;
+    }
+  },
+  { passive: true },
+);
+gameWrap.addEventListener('touchend', (e) => (isTouchPad = false));
+gameWrap.addEventListener('touchmove', (e) => {
+  if (!isPlay || !isTouchPad) return;
+  movePad(e.clientX - mouseX);
+  mouseX = e.clientX;
+});
+
 // ===================== 暂停 / 继续 =====================
 // （pauseBtn/pauseMask/resumeBtn 已在 DOM 缓存区声明）
 function pauseGame() {
@@ -1314,6 +1365,7 @@ function pauseGame() {
   stopBgm();
   pauseBtn.innerHTML = '&#9654;';
   pauseMask.classList.remove('hide');
+  isTouchPad = false;
 }
 function resumeGame() {
   if (!isPaused) return;
@@ -1351,37 +1403,3 @@ window.addEventListener('focus', () => {
     playSound('bgm');
   }
 });
-
-// ===================== 鼠标/触摸控制 =====================
-
-let isTouchPad = false;
-let mouseX = 0;
-
-const touchStart = (e) => {
-  if (!isPlay) return;
-  const touch = e.touches[0];
-  isTouchPad =
-    getAlphaAt(
-      'paddle',
-      padW,
-      padH,
-      touch.clientX - padX,
-      touch.clientY - (window.innerHeight - padH - 30 * scale),
-    ) >= 20;
-  if (isTouchPad) {
-    mouseX = touch.clientX;
-  }
-};
-
-const touchMove = (e) => {
-  if (!isPlay || !isTouchPad) return;
-  movePad(e.clientX - mouseX);
-  mouseX = e.clientX;
-};
-
-gameWrap.addEventListener('mousedown', touchStart);
-gameWrap.addEventListener('mouseup', (e) => (isTouchPad = false));
-gameWrap.addEventListener('mousemove', touchMove);
-gameWrap.addEventListener('touchstart', touchStart, { passive: true });
-gameWrap.addEventListener('touchend', (e) => (isTouchPad = false));
-gameWrap.addEventListener('touchmove', touchMove);

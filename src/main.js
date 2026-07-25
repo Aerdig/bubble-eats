@@ -1,5 +1,5 @@
 // ===================== 版本号 =====================
-document.getElementById('version-badge').textContent = 'v' + __APP_VERSION__
+document.getElementById('version-badge').textContent = 'v' + __APP_VERSION__;
 
 // ===================== 资源导入 =====================
 // 图片
@@ -72,7 +72,7 @@ const IMG = {
     { img: imgXiaoLongBao, point: 1 },
     { img: imgXigua, point: 2 },
     { img: imgZhaxia, point: 3 },
-    { img: imgLongmibao, point: 5 }
+    { img: imgLongmibao, point: 5 },
   ],
   zhaxiaSkill: imgZhaxiaSkill,
   freezeSkill: imgFreezeSkill,
@@ -174,9 +174,15 @@ function loadSave() {
         data.catches[k] = saved.catches[k];
     });
     if (saved.skills) {
-      if (saved.skills.active === null || typeof saved.skills.active === 'string')
+      if (
+        saved.skills.active === null ||
+        typeof saved.skills.active === 'string'
+      )
         data.skills.active = saved.skills.active;
-      if (saved.skills.passive === null || typeof saved.skills.passive === 'string')
+      if (
+        saved.skills.passive === null ||
+        typeof saved.skills.passive === 'string'
+      )
         data.skills.passive = saved.skills.passive;
     }
   } catch (e) {}
@@ -225,7 +231,8 @@ function renderSkillSlots(data) {
 }
 function openSkillPicker(slot) {
   skillPickerSlot = slot;
-  skillsPopTitle.textContent = slot === 'active' ? '选择主动技能' : '选择被动技能';
+  skillsPopTitle.textContent =
+    slot === 'active' ? '选择主动技能' : '选择被动技能';
   renderSkillPicker();
   startPop.classList.add('hide');
   skillsPop.classList.remove('hide');
@@ -866,10 +873,8 @@ function updatePad() {
 }
 updatePad();
 
-function movePad(x) {
-  let newX = x - padW / 2;
-  newX = Math.max(0, Math.min(newX, window.innerWidth - padW));
-  padX = newX;
+function movePad(dx) {
+  padX = Math.max(0, Math.min(padX + dx, window.innerWidth - padW));
   updatePad();
 }
 
@@ -888,22 +893,6 @@ function flashPaddle(type) {
     paddleFlashTimer = null;
   }, 200);
 }
-
-// ===================== 输入事件 =====================
-gameWrap.addEventListener(
-  'touchmove',
-  (e) => {
-    if (!isPlay) return;
-    e.preventDefault();
-    movePad(e.touches[0].clientX);
-  },
-  { passive: false },
-);
-
-gameWrap.addEventListener('mousemove', (e) => {
-  if (!isPlay) return;
-  movePad(e.clientX);
-});
 
 // ===================== 掉落物生成 =====================
 function createItem() {
@@ -1362,3 +1351,37 @@ window.addEventListener('focus', () => {
     playSound('bgm');
   }
 });
+
+// ===================== 鼠标/触摸控制 =====================
+
+let isTouchPad = false;
+let mouseX = 0;
+
+const touchStart = (e) => {
+  if (!isPlay) return;
+  const touch = e.touches[0];
+  isTouchPad =
+    getAlphaAt(
+      'paddle',
+      padW,
+      padH,
+      touch.clientX - padX,
+      touch.clientY - (window.innerHeight - padH - 30 * scale),
+    ) >= 20;
+  if (isTouchPad) {
+    mouseX = touch.clientX;
+  }
+};
+
+const touchMove = (e) => {
+  if (!isPlay || !isTouchPad) return;
+  movePad(e.clientX - mouseX);
+  mouseX = e.clientX;
+};
+
+gameWrap.addEventListener('mousedown', touchStart);
+gameWrap.addEventListener('mouseup', (e) => (isTouchPad = false));
+gameWrap.addEventListener('mousemove', touchMove);
+gameWrap.addEventListener('touchstart', touchStart, { passive: true });
+gameWrap.addEventListener('touchend', (e) => (isTouchPad = false));
+gameWrap.addEventListener('touchmove', touchMove);

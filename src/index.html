@@ -34,17 +34,23 @@
       background-position: center;
     }
 
-    .info {
-      position: absolute;
-      top: 12px;
-      width: 100%;
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      color: #fff;
-      font-size: 27.5px;
-      z-index: 10;
-      text-shadow: 0 0 4px #000;
+.info {
+  position: absolute;
+  top: 8px;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  color: #fff;
+  font-size: 24px;
+  z-index: 10;
+  text-shadow: 0 0 4px #000;
+  padding: 0 120px 0 12px;
+  box-sizing: border-box;
+}
+
+    .info.hide {
+      display: none !important;
     }
 
     #passiveBuffWrap {
@@ -81,7 +87,7 @@
     }
 
     .pop {
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
       width: 100%;
@@ -98,10 +104,24 @@
       gap: 12px;
     }
 
+    .pop-left {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .pop-rules {
+      font-size: 11.25px;
+      line-height: 1.6;
+      max-width: 320px;
+      color: #ddd;
+    }
+
     .pop-cover {
       width: 220px;
       height: auto;
-      margin-bottom: 16px;
+      border-radius: 12px;
     }
 
     .end-img {
@@ -157,6 +177,7 @@
     }
 
     .btn-row {
+      margin-top: 12px;
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
@@ -175,24 +196,48 @@
       display: none !important
     }
 
-    #pauseBtn {
+    #pauseBtn,
+    #settingsBtn {
       position: absolute;
-      top: 50px;
-      right: 12px;
+      top: 12px;
       z-index: 20;
       width: 44px;
       height: 44px;
-      border: none;
-      border-radius: 50%;
-      background: rgba(0, 0, 0, .45);
       color: #fff;
-      font-size: 22px;
-      line-height: 44px;
+      font-size: 12px;
       text-align: center;
       cursor: pointer;
       display: none;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      transition: background 0.2s;
+    }
+
+    #pauseBtn {
+      right: 62px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, .45);
+      line-height: 44px;
+    }
+
+    #pauseBtn:active {
+      background: rgba(0, 0, 0, .7);
+    }
+
+    #settingsBtn {
+      right: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, .25);
+      line-height: 40px;
+      z-index: 100;
+    }
+
+    #settingsBtn:active {
+      background: rgba(255, 255, 255, 0.15);
     }
     #pauseBtn img {
       width: 50%;
@@ -203,13 +248,141 @@
     }
 
     @media (orientation: landscape) {
-      #pauseBtn {
+      .info {
+        font-size: 20px;
+        padding: 0 120px 0 12px;
+      }
+      #pauseBtn,
+      #settingsBtn {
         top: 12px;
+      }
+      
+      #startPop {
+        padding: 0;
+        gap: 0;
+      }
+      
+      #startPop .pop-inner {
+        display: flex;
+        flex-direction: row;
+        max-width: 92vw;
+        max-height: 88vh;
+        gap: 28px;
+        padding: 28px 36px;
+        overflow-y: auto;
+        border-radius: 20px;
+      }
+      
+      #startPop .pop-inner .pop-left {
+        flex: 0 0 300px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 16px;
+        padding-top: 8px;
+      }
+      
+      #startPop .pop-inner .pop-cover {
+        width: 260px;
+        height: 180px;
+        object-fit: cover;
+        border-radius: 16px;
+        flex-shrink: 0;
+      }
+      
+      #startPop .pop-inner .pop-rules {
+        font-size: 11px;
+        line-height: 1.7;
+        color: #ccc;
+        text-align: center;
+        max-width: 280px;
+        padding: 0 8px;
+      }
+      
+      #startPop .pop-inner .pop-content-wrapper {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        flex: 1;
+        min-width: 0;
+        gap: 18px;
+        padding: 8px 0;
+      }
+      
+      #startPop .pop-inner .pop-header {
+        text-align: center;
+      }
+      
+      #startPop .pop-inner .pop-header h2 {
+        font-size: 36px;
+        margin-bottom: 0;
+      }
+      
+      #startPop .pop-inner .pop-middle {
+        display: flex;
+        justify-content: center;
+      }
+      
+      #startPop .pop-inner .menu-stats-row {
+        gap: 12px;
+      }
+      
+      #startPop .pop-inner .count-board {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        padding: 10px 14px;
+        backdrop-filter: blur(4px);
+      }
+      
+      #startPop .pop-inner .count-board p {
+        font-size: 10.5px;
+      }
+      
+      #startPop .pop-inner .skill-board {
+        padding: 10px 14px;
+      }
+      
+      #startPop .pop-inner .skill-board p {
+        font-size: 10.5px;
+      }
+      
+      #startPop .pop-inner .skill-slot {
+        width: 52px;
+        height: 52px;
+      }
+      
+      #startPop .pop-inner .btn-row {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        justify-content: flex-start;
+        align-items: center;
+      }
+      
+      #startPop .pop-inner .btn {
+        min-width: 180px;
+        padding: 16px 32px;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        border-radius: 999px;
+        box-shadow: 0 4px 15px rgba(0, 173, 181, 0.35);
+      }
+      
+      #startPop .pop-inner .btn-secondary {
+        box-shadow: none;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      
+      #startPop .pop-inner .btn-secondary:active {
+        background: rgba(255, 255, 255, 0.3);
       }
     }
 
     #pauseMask {
-      position: absolute;
+      position: fixed;
       inset: 0;
       background: rgba(0, 0, 0, .55);
       display: flex;
@@ -229,6 +402,90 @@
       font-size: 32px;
       font-weight: bold;
       text-shadow: 0 2px 8px #000;
+    }
+
+    /* ===== 设置弹窗 ===== */
+    .settings-inner {
+      background: rgba(20, 20, 30, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 32px 36px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      min-width: 300px;
+      max-width: 400px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .settings-inner h2 {
+      font-size: 28px;
+      margin: 0;
+      color: #fff;
+    }
+
+    .settings-item {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .settings-item label {
+      font-size: 14px;
+      color: #ccc;
+      text-align: left;
+    }
+
+    .settings-slider-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .settings-slider-row input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.2);
+      outline: none;
+    }
+
+    .settings-slider-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #00adb5;
+      cursor: pointer;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 2px 8px rgba(0, 173, 181, 0.4);
+    }
+
+    .settings-slider-row input[type="range"]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #00adb5;
+      cursor: pointer;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .settings-val {
+      font-size: 14px;
+      color: #fff;
+      min-width: 40px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #settingsConfirmBtn {
+      margin-top: 8px;
+      min-width: 120px;
     }
 
     #loadingMask {
@@ -503,33 +760,43 @@
 
       <!-- 开始弹窗 -->
       <div id="startPop" class="pop hide">
-        <img class="pop-cover" id="startCoverImg" alt="封面">
-        <h2>让礼泡泡吃到饱</h2>
-        <p>移动礼泡泡接住食物<br>小笼包1分｜瓜咪2分｜虾咪3分｜龙秘宝5分<br>躲开正在吃小笼包的龙秘宝，食物漏掉会清空连击，生命归零游戏结束</p>
-        <div class="menu-stats-row">
-          <div class="count-board" id="saveStatsBoard">
-            <p><strong>累计记录</strong></p>
-            <p>结局收集：<span id="saveEndingsTotal">0</span> / 12</p>
-            <p>龙秘宝 <span id="saveBomb">0</span>｜冰块 <span id="saveIce">0</span>｜小龙 <span id="saveXiaolong">0</span></p>
-            <p>死鬼 <span id="saveGhost">0</span>｜食物 <span id="saveFood">0</span></p>
+        <div class="pop-inner">
+          <div class="pop-left">
+            <img class="pop-cover" id="startCoverImg" alt="封面">
+            <p class="pop-rules">移动礼泡泡接住食物<br>小笼包1分｜瓜咪2分｜虾咪3分｜龙秘宝5分<br>躲开正在吃小笼包的龙秘宝，食物漏掉会清空连击，生命归零游戏结束</p>
           </div>
-          <div class="count-board skill-board">
-            <p><strong>同伴</strong></p>
-            <div class="skill-slots">
-              <button type="button" class="skill-slot empty" id="activeSkillSlot" aria-label="配置主动技能">
-                <span class="skill-label">主动</span>
-                <img id="activeSkillIcon" alt="" class="hide">
-              </button>
-              <button type="button" class="skill-slot empty" id="passiveSkillSlot" aria-label="配置被动技能">
-                <span class="skill-label">被动</span>
-                <img id="passiveSkillIcon" alt="" class="hide">
-              </button>
+          <div class="pop-content-wrapper">
+            <div class="pop-header">
+              <h2>让礼泡泡吃到饱</h2>
+            </div>
+            <div class="pop-middle">
+              <div class="menu-stats-row">
+                <div class="count-board" id="saveStatsBoard">
+                  <p><strong>累计记录</strong></p>
+                  <p>结局收集：<span id="saveEndingsTotal">0</span> / 12</p>
+                  <p>龙秘宝 <span id="saveBomb">0</span>｜冰块 <span id="saveIce">0</span>｜小龙 <span id="saveXiaolong">0</span></p>
+                  <p>死鬼 <span id="saveGhost">0</span>｜食物 <span id="saveFood">0</span></p>
+                </div>
+                <div class="count-board skill-board">
+                  <p><strong>同伴</strong></p>
+                  <div class="skill-slots">
+                    <button type="button" class="skill-slot empty" id="activeSkillSlot" aria-label="配置主动技能">
+                      <span class="skill-label">主动</span>
+                      <img id="activeSkillIcon" alt="" class="hide">
+                    </button>
+                    <button type="button" class="skill-slot empty" id="passiveSkillSlot" aria-label="配置被动技能">
+                      <span class="skill-label">被动</span>
+                      <img id="passiveSkillIcon" alt="" class="hide">
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="btn-row">
+              <button class="btn" id="startBtn">开始游戏</button>
+              <button class="btn btn-secondary" id="endingsBtn">结局收集</button>
             </div>
           </div>
-        </div>
-        <div class="btn-row">
-          <button class="btn" id="startBtn">开始游戏</button>
-          <button class="btn btn-secondary" id="endingsBtn">结局收集</button>
         </div>
       </div>
       <!-- 技能配置 -->
@@ -563,9 +830,31 @@
       </div>
       <button id="activeSkillBtn" aria-label="使用主动技能"></button>
       <button id="pauseBtn"></button>
+      <button id="settingsBtn">设置</button>
       <div id="pauseMask" class="hide">
         <p>游戏暂停</p>
         <button class="btn" id="resumeBtn">继续游戏</button>
+      </div>
+      <!-- 设置弹窗 -->
+      <div id="settingsPop" class="pop hide">
+        <div class="settings-inner">
+          <h2>设置</h2>
+          <div class="settings-item">
+            <label for="bgmVolume">背景音量</label>
+            <div class="settings-slider-row">
+              <input type="range" id="bgmVolume" min="0" max="100" value="100">
+              <span class="settings-val" id="bgmVolumeVal">100%</span>
+            </div>
+          </div>
+          <div class="settings-item">
+            <label for="sfxVolume">音效音量</label>
+            <div class="settings-slider-row">
+              <input type="range" id="sfxVolume" min="0" max="100" value="100">
+              <span class="settings-val" id="sfxVolumeVal">100%</span>
+            </div>
+          </div>
+          <button class="btn btn-secondary" id="settingsConfirmBtn">确定</button>
+        </div>
       </div>
     </div>
   </div><!-- /rotate-wrapper -->

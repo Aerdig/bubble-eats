@@ -239,6 +239,13 @@
     #settingsBtn:active {
       background: rgba(255, 255, 255, 0.15);
     }
+    #pauseBtn img {
+      width: 50%;
+      height: 50%;
+      margin: auto;
+      object-fit: contain;
+      display: block;
+    }
 
     @media (orientation: landscape) {
       .info {
@@ -822,7 +829,7 @@
         </div>
       </div>
       <button id="activeSkillBtn" aria-label="使用主动技能"></button>
-      <button id="pauseBtn">&#9646;&#9646;</button>
+      <button id="pauseBtn"></button>
       <button id="settingsBtn">设置</button>
       <div id="pauseMask" class="hide">
         <p>游戏暂停</p>

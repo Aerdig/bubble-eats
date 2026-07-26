@@ -1,5 +1,5 @@
 // ===================== 版本号 =====================
-document.getElementById('version-badge').textContent = 'v' + __APP_VERSION__
+document.getElementById('version-badge').textContent = 'v' + __APP_VERSION__;
 
 // ===================== 资源导入 =====================
 // 图片
@@ -33,6 +33,8 @@ import imgZhaxia from '../assets/images/zhaxia.png';
 import imgLongmibao from '../assets/images/longmibao.png';
 import imgZhaxiaSkill from '../assets/images/我是炸虾.png';
 import imgFreezeSkill from '../assets/images/全部冻上.png';
+import pauseIcon from '../assets/images/pause.svg';
+import playIcon from '../assets/images/play.svg';
 
 // 音频img
 import audioBgm from '../assets/audio/bgm.mp3';
@@ -72,7 +74,7 @@ const IMG = {
     { img: imgXiaoLongBao, point: 1 },
     { img: imgXigua, point: 2 },
     { img: imgZhaxia, point: 3 },
-    { img: imgLongmibao, point: 5 }
+    { img: imgLongmibao, point: 5 },
   ],
   zhaxiaSkill: imgZhaxiaSkill,
   freezeSkill: imgFreezeSkill,
@@ -174,9 +176,15 @@ function loadSave() {
         data.catches[k] = saved.catches[k];
     });
     if (saved.skills) {
-      if (saved.skills.active === null || typeof saved.skills.active === 'string')
+      if (
+        saved.skills.active === null ||
+        typeof saved.skills.active === 'string'
+      )
         data.skills.active = saved.skills.active;
-      if (saved.skills.passive === null || typeof saved.skills.passive === 'string')
+      if (
+        saved.skills.passive === null ||
+        typeof saved.skills.passive === 'string'
+      )
         data.skills.passive = saved.skills.passive;
     }
   } catch (e) {}
@@ -225,7 +233,8 @@ function renderSkillSlots(data) {
 }
 function openSkillPicker(slot) {
   skillPickerSlot = slot;
-  skillsPopTitle.textContent = slot === 'active' ? '选择主动技能' : '选择被动技能';
+  skillsPopTitle.textContent =
+    slot === 'active' ? '选择主动技能' : '选择被动技能';
   renderSkillPicker();
   startPop.classList.add('hide');
   skillsPop.classList.remove('hide');
@@ -557,7 +566,7 @@ function playSound(type) {
     source.connect(gain);
     gain.connect(audioCtx.destination);
     source.start(0);
-    if (type === 'bgm') {
+    if (type === 'bgm' && !bgmSource) {
       source.loop = true;
       bgmSource = source;
     }
@@ -881,8 +890,7 @@ function movePad(x) {
   updatePad();
 }
 
-function flashPaddle(type) {
-  if (paddleFlashTimer) clearTimeout(paddleFlashTimer);
+const flashPaddle = (() => {
   const map = {
     good: IMG.paddleGoodFlash,
     bomb: IMG.paddleBombFlash,
@@ -890,12 +898,15 @@ function flashPaddle(type) {
     xiaolong: IMG.paddleXiaolongFlash,
     ghost: IMG.paddleGhostFlash,
   };
-  if (map[type]) paddle.style.backgroundImage = `url(${map[type]})`;
-  paddleFlashTimer = setTimeout(() => {
-    paddle.style.backgroundImage = `url(${IMG.paddle})`;
-    paddleFlashTimer = null;
-  }, 200);
-}
+  return (type) => {
+    if (paddleFlashTimer) clearTimeout(paddleFlashTimer);
+    if (map[type]) paddle.style.backgroundImage = `url(${map[type]})`;
+    paddleFlashTimer = setTimeout(() => {
+      paddle.style.backgroundImage = `url(${IMG.paddle})`;
+      paddleFlashTimer = null;
+    }, 200);
+  };
+})();
 
 // ===================== 输入事件 =====================
 gameWrap.addEventListener(
@@ -1024,7 +1035,7 @@ function gameLoop(timestamp) {
   }
   const dt = Math.min(timestamp - lastFrameTime, 50);
   lastFrameTime = timestamp;
-  const timeScale = dt / 16.667;
+  const timeScale = (dt * 60) / 1000;
   updatePassiveBuffUI();
 
   for (let i = dropList.length - 1; i >= 0; i--) {
@@ -1218,7 +1229,8 @@ function startGame() {
   statBomb = statIce = statXiaolong = statGhost = statFood = 0;
   isPaused = false;
   document.getElementById('pauseMask').classList.add('hide');
-  document.getElementById('pauseBtn').innerHTML = '&#9646;&#9646;';
+  document.getElementById('pauseBtn').innerHTML =
+    `<img src="${pauseIcon}" alt="pause" />`;
   resetCombo();
   updatePaddleSize();
   scoreBox.innerText = score;
@@ -1383,7 +1395,7 @@ function pauseGame() {
   stopCreate();
   if (frameId) cancelAnimationFrame(frameId);
   stopBgm();
-  pauseBtn.innerHTML = '&#9654;';
+  pauseBtn.innerHTML = `<img src="${playIcon}" alt="play" />`;
   pauseMask.classList.remove('hide');
 }
 function resumeGame() {
@@ -1392,7 +1404,7 @@ function resumeGame() {
   isPlay = true;
   lastFrameTime = null;
   pauseMask.classList.add('hide');
-  pauseBtn.innerHTML = '&#9646;&#9646;';
+  pauseBtn.innerHTML = `<img src="${pauseIcon}" alt="pause" />`;
   gameLoop();
   startCreate();
   playSound('bgm');
@@ -1422,3 +1434,10 @@ window.addEventListener('focus', () => {
     playSound('bgm');
   }
 });
+
+window.addEventListener("keyup", (e) => {
+  if (e.key === " ") {
+    if (isPaused) resumeGame();
+    else pauseGame();
+  }
+})

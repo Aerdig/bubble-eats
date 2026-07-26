@@ -459,6 +459,7 @@ function recordGameResult(endingId, runStats) {
 
 // ===================== DOM 缓存 =====================
 const gameWrap = document.getElementById('game');
+const infoHead = document.querySelector('.info');
 const paddle = document.getElementById('paddle');
 const scoreBox = document.getElementById('score');
 const lifeBox = document.getElementById('life');
@@ -491,13 +492,21 @@ const cntFood = document.getElementById('cntFood');
 const pauseBtn = document.getElementById('pauseBtn');
 const pauseMask = document.getElementById('pauseMask');
 const resumeBtn = document.getElementById('resumeBtn');
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsPop = document.getElementById('settingsPop');
+const bgmVolumeInput = document.getElementById('bgmVolume');
+const sfxVolumeInput = document.getElementById('sfxVolume');
+const bgmVolumeVal = document.getElementById('bgmVolumeVal');
+const sfxVolumeVal = document.getElementById('sfxVolumeVal');
+const settingsConfirmBtn = document.getElementById('settingsConfirmBtn');
 
 // ===================== 音频系统 =====================
 let audioCtx = null;
 const audioBuf = {};
 let bgmSource = null;
 let bgmEl = null;
-let soundEnabled = true;
+let bgmVolume = 1.0;
+let sfxVolume = 1.0;
 let useAudioFallback = false;
 
 async function decodeAllAudio() {
@@ -527,23 +536,22 @@ async function decodeAllAudio() {
 }
 
 function playSound(type) {
-  if (!soundEnabled) return;
+  if (type === 'bgm' && bgmVolume <= 0) return;
+  if (type !== 'bgm' && sfxVolume <= 0) return;
   if (useAudioFallback) {
     try {
       if (type === 'bgm') {
         bgmEl = new Audio(AUDIO_SRC.bgm);
         bgmEl.loop = true;
-        bgmEl.volume = 0.4;
-        bgmEl.play().catch(() => {
-          soundEnabled = false;
-        });
+        bgmEl.volume = bgmVolume * 0.4;
+        bgmEl.play().catch(() => {});
       } else {
         const a = new Audio(AUDIO_SRC[type]);
-        a.volume = 0.8;
+        a.volume = sfxVolume * 0.8;
         a.play().catch(() => {});
       }
     } catch (e) {
-      soundEnabled = false;
+      return;
     }
     return;
   }
@@ -552,7 +560,7 @@ function playSound(type) {
     const source = audioCtx.createBufferSource();
     source.buffer = audioBuf[type];
     const gain = audioCtx.createGain();
-    gain.gain.value = type === 'bgm' ? 0.4 : 0.8;
+    gain.gain.value = type === 'bgm' ? bgmVolume * 0.4 : sfxVolume * 0.8;
     source.connect(gain);
     gain.connect(audioCtx.destination);
     source.start(0);
@@ -560,9 +568,7 @@ function playSound(type) {
       source.loop = true;
       bgmSource = source;
     }
-  } catch (e) {
-    soundEnabled = false;
-  }
+  } catch (e) {}
 }
 
 function stopBgm() {
@@ -713,6 +719,8 @@ async function preloadAllAssets() {
   paddle.style.backgroundImage = `url(${IMG.paddle})`;
   gameWrap.style.backgroundImage = `url(${IMG.gameBg})`;
   startPop.classList.remove('hide');
+  infoHead.classList.add('hide');
+  settingsBtn.style.display = 'block';
 }
 
 function getAlphaAt(key, elW, elH, px, py) {
@@ -1180,7 +1188,8 @@ function isMenuOpen() {
     !startPop.classList.contains('hide') ||
     !overPop.classList.contains('hide') ||
     !endingsPop.classList.contains('hide') ||
-    !skillsPop.classList.contains('hide')
+    !skillsPop.classList.contains('hide') ||
+    !settingsPop.classList.contains('hide')
   );
 }
 
@@ -1209,9 +1218,11 @@ function startGame() {
   if (paddleFlashTimer) clearTimeout(paddleFlashTimer);
   paddleFlashTimer = null;
   startPop.classList.add('hide');
+  infoHead.classList.remove('hide');
   overPop.classList.add('hide');
   endingsPop.classList.add('hide');
   skillsPop.classList.add('hide');
+  settingsPop.classList.add('hide');
   const skills = getValidatedSkills();
   equippedActive = skills.active;
   equippedPassive = skills.passive;
@@ -1220,6 +1231,7 @@ function startGame() {
   document.getElementById('passiveBuffWrap').classList.add('hide');
   isPlay = true;
   document.getElementById('pauseBtn').style.display = 'block';
+  settingsBtn.style.display = 'block';
   updateInGameSkillBtn();
   lastFrameTime = null;
   if (!audioBuf.bgm) {
@@ -1252,12 +1264,15 @@ function returnToMain() {
   paddle.style.backgroundImage = `url(${IMG.paddle})`;
   document.getElementById('pauseBtn').style.display = 'none';
   activeSkillBtn.style.display = 'none';
+  settingsBtn.style.display = 'none';
+  closeSettings();
   document.getElementById('passiveBuffWrap').classList.add('hide');
   document.getElementById('pauseMask').classList.add('hide');
   overPop.classList.add('hide');
   endingsPop.classList.add('hide');
   skillsPop.classList.add('hide');
   startPop.classList.remove('hide');
+  infoHead.classList.add('hide');
   renderSaveStats(loadSave());
   renderSkillSlots(loadSave());
 }
@@ -1266,6 +1281,9 @@ function gameOver() {
   isPlay = false;
   document.getElementById('pauseBtn').style.display = 'none';
   activeSkillBtn.style.display = 'none';
+  settingsBtn.style.display = 'none';
+  closeSettings();
+  infoHead.classList.add('hide');
   document.getElementById('passiveBuffWrap').classList.add('hide');
   isPaused = false;
   if (frameId) cancelAnimationFrame(frameId);
@@ -1352,6 +1370,46 @@ gameWrap.addEventListener('touchmove', (e) => {
   if (!isPlay || !isTouchPad) return;
   movePad(e.clientX - mouseX);
   mouseX = e.clientX;
+// ===================== 设置弹窗 =====================
+function openSettings() {
+  settingsPop.classList.remove('hide');
+  bgmVolumeInput.value = Math.round(bgmVolume * 100);
+  sfxVolumeInput.value = Math.round(sfxVolume * 100);
+  bgmVolumeVal.textContent = Math.round(bgmVolume * 100) + '%';
+  sfxVolumeVal.textContent = Math.round(sfxVolume * 100) + '%';
+  settingsBtn.textContent = '返回';
+}
+
+function closeSettings() {
+  settingsPop.classList.add('hide');
+  settingsBtn.textContent = '设置';
+}
+
+bgmVolumeInput.addEventListener('input', () => {
+  const val = parseInt(bgmVolumeInput.value);
+  bgmVolumeVal.textContent = val + '%';
+  bgmVolume = val / 100;
+});
+
+sfxVolumeInput.addEventListener('input', () => {
+  const val = parseInt(sfxVolumeInput.value);
+  sfxVolumeVal.textContent = val + '%';
+  sfxVolume = val / 100;
+});
+
+settingsBtn.addEventListener('click', () => {
+  if (!settingsPop.classList.contains('hide')) {
+    closeSettings();
+    if (isPaused) resumeGame();
+  } else {
+    if (isPlay) pauseGame();
+    openSettings();
+  }
+});
+
+settingsConfirmBtn.addEventListener('click', () => {
+  closeSettings();
+  if (isPaused) resumeGame();
 });
 
 // ===================== 暂停 / 继续 =====================

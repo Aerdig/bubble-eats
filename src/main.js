@@ -883,10 +883,8 @@ function updatePad() {
 }
 updatePad();
 
-function movePad(x) {
-  let newX = x - padW / 2;
-  newX = Math.max(0, Math.min(newX, window.innerWidth - padW));
-  padX = newX;
+function movePad(dx) {
+  padX = Math.max(0, Math.min(padX + dx, window.innerWidth - padW));
   updatePad();
 }
 
@@ -907,22 +905,6 @@ const flashPaddle = (() => {
     }, 200);
   };
 })();
-
-// ===================== 输入事件 =====================
-gameWrap.addEventListener(
-  'touchmove',
-  (e) => {
-    if (!isPlay) return;
-    e.preventDefault();
-    movePad(e.touches[0].clientX);
-  },
-  { passive: false },
-);
-
-gameWrap.addEventListener('mousemove', (e) => {
-  if (!isPlay) return;
-  movePad(e.clientX);
-});
 
 // ===================== 掉落物生成 =====================
 function createItem() {
@@ -1344,6 +1326,55 @@ passiveSkillSlot.onclick = () => openSkillPicker('passive');
 skillsBackBtn.onclick = closeSkillPicker;
 activeSkillBtn.addEventListener('click', useActiveSkill);
 
+// ===================== 鼠标/触摸控制 =====================
+
+let isTouchPad = false;
+let mouseX = 0;
+
+gameWrap.addEventListener('mousedown', (e) => {
+  if (!isPlay) return;
+  isTouchPad =
+    getAlphaAt(
+      'paddle',
+      padW,
+      padH,
+      e.clientX - padX,
+      e.clientY - (window.innerHeight - padH - 30 * scale),
+    ) >= 20;
+  if (isTouchPad) {
+    mouseX = e.clientX;
+  }
+});
+gameWrap.addEventListener('mouseup', (e) => (isTouchPad = false));
+gameWrap.addEventListener('mousemove', (e) => {
+  if (!isPlay || !isTouchPad) return;
+  movePad(e.clientX - mouseX);
+  mouseX = e.clientX;
+});
+gameWrap.addEventListener(
+  'touchstart',
+  (e) => {
+    if (!isPlay) return;
+    const touch = e.touches[0];
+    isTouchPad =
+      getAlphaAt(
+        'paddle',
+        padW,
+        padH,
+        touch.clientX - padX,
+        touch.clientY - (window.innerHeight - padH - 30 * scale),
+      ) >= 20;
+    if (isTouchPad) {
+      mouseX = touch.clientX;
+    }
+  },
+  { passive: true },
+);
+gameWrap.addEventListener('touchend', (e) => (isTouchPad = false));
+gameWrap.addEventListener('touchmove', (e) => {
+  if (!isPlay || !isTouchPad) return;
+  movePad(e.clientX - mouseX);
+  mouseX = e.clientX;
 // ===================== 设置弹窗 =====================
 function openSettings() {
   settingsPop.classList.remove('hide');
@@ -1397,6 +1428,7 @@ function pauseGame() {
   stopBgm();
   pauseBtn.innerHTML = `<img src="${playIcon}" alt="play" />`;
   pauseMask.classList.remove('hide');
+  isTouchPad = false;
 }
 function resumeGame() {
   if (!isPaused) return;

@@ -1375,6 +1375,7 @@ gameWrap.addEventListener('touchmove', (e) => {
   if (!isPlay || !isTouchPad) return;
   movePad(e.clientX - mouseX);
   mouseX = e.clientX;
+});
 // ===================== 设置弹窗 =====================
 function openSettings() {
   settingsPop.classList.remove('hide');
@@ -1467,9 +1468,9 @@ window.addEventListener('focus', () => {
   }
 });
 
-window.addEventListener("keyup", (e) => {
-  if (e.key === " ") {
+window.addEventListener('keyup', (e) => {
+  if (e.key === ' ') {
     if (isPaused) resumeGame();
     else pauseGame();
   }
-})
+});
